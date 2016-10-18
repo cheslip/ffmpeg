@@ -10,7 +10,8 @@
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## x264 http://www.videolan.org/developers/x264.html
-        curl -sL https://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-${X264_VERSION}.tar.bz2 | \
+        curl -sL https://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-${X264_VERSION}.tar.bz2 && \
+        echo "${OGG_256SUM}"| sha256sum --check
         tar -jx --strip-components=1 && \
         ./configure --prefix="${SRC}" --bindir="${SRC}/bin" --enable-static && \
         make && \
@@ -19,7 +20,7 @@
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## x265 http://x265.org/
-        curl -sL https://download.videolan.org/pub/videolan/x265/x265_${X265_VERSION}.tar.gz  | \
+        curl -sL https://download.videolan.org/pub/videolan/x265/x265_${X265_VERSION}.tar.gz | \
         tar -zx && \
         cd x265_${X265_VERSION}/build/linux && \
         ./multilib.sh && \
@@ -27,17 +28,18 @@
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## libogg https://www.xiph.org/ogg/
-        curl -sL http://downloads.xiph.org/releases/ogg/libogg-${OGG_VERSION}.tar.gz | \
-        tar -zx --strip-components=1 && \
+        curl -sLO http://downloads.xiph.org/releases/ogg/libogg-${OGG_VERSION}.tar.gz && \
+        echo ${OGG_SHA256SUM} | sha256sum --check && \
+        tar -zx --strip-components=1 -f libogg-${OGG_VERSION}.tar.gz && \
         ./configure --prefix="${SRC}" --bindir="${SRC}/bin" --disable-shared --datadir=${DIR} && \
         make && \
         make install && \
-        make distclean && \
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## libopus https://www.opus-codec.org/
-        curl -sL http://downloads.xiph.org/releases/opus/opus-${OPUS_VERSION}.tar.gz | \
-        tar -zx --strip-components=1 && \
+        curl -sLO http://downloads.xiph.org/releases/opus/opus-${OPUS_VERSION}.tar.gz && \
+        echo ${OPUS_SHA256SUM} | sha256sum --check && \
+        tar -zx --strip-components=1 -f opus-${OPUS_VERSION}.tar.gz && \
         autoreconf -fiv && \
         ./configure --prefix="${SRC}" --disable-shared --datadir="${DIR}" && \
         make && \
@@ -46,8 +48,20 @@
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## libvorbis https://xiph.org/vorbis/
-        curl -sL http://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS_VERSION}.tar.gz | \
-        tar -zx --strip-components=1 && \
+        curl -sLO http://downloads.xiph.org/releases/vorbis/libvorbis-${VORBIS_VERSION}.tar.gz && \
+        echo ${VORBIS_SHA256SUM} | sha256sum --check && \
+        tar -zx --strip-components=1 -f opus-${VORBIS_VERSION}.tar.gz && \
+         ./configure --prefix="${SRC}" --with-ogg="${SRC}" --bindir="${SRC}/bin" \
+        --disable-shared --datadir="${DIR}" && \
+        make && \
+        make install && \
+        make distclean && \
+        rm -rf ${DIR} && \
+        DIR=$(mktemp -d) && cd ${DIR} && \
+## libtheora http://www.theora.org/
+        curl -sLO http://downloads.xiph.org/releases/theora/libtheora-${THEORA_VERSION}.tar.gz && \
+        echo ${THEORA_SHA256SUM} | sha256sum --check && \
+        tar -zx --strip-components=1 -f libtheora-${THEORA_VERSION}.tar.gz && \
         ./configure --prefix="${SRC}" --with-ogg="${SRC}" --bindir="${SRC}/bin" \
         --disable-shared --datadir="${DIR}" && \
         make && \
@@ -55,14 +69,14 @@
         make distclean && \
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
-#@ libtheora http://www.theora.org/
-        curl -sL http://downloads.xiph.org/releases/theora/libtheora-${THEORA_VERSION}.tar.bz2 | \
-        tar -jx --strip-components=1 && \
-        ./configure --prefix="${SRC}" --with-ogg="${SRC}" --bindir="${SRC}/bin" \
-        --disable-shared --datadir="${DIR}" && \
+## xvid https://www.xvid.com/
+        curl -sLO http://downloads.xvid.org/downloads/xvidcore-${XVID_VERSION}.tar.gz && \
+        echo ${XVID_SHA256SUM} | sha256sum --check && \
+        tar -zx -f xvidcore-${XVID_VERSION}.tar.gz && \
+        cd xvidcore/build/generic && \
+        ./configure --prefix="${SRC}" --bindir="${SRC}/bin" --datadir="${DIR}" && \
         make && \
         make install && \
-        make distclean && \
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## libvpx https://www.webmproject.org/code/
@@ -93,15 +107,6 @@
         make install && \
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
-## xvid https://www.xvid.com/
-        curl -sL http://downloads.xvid.org/downloads/xvidcore-${XVID_VERSION}.tar.gz | \
-        tar -zx && \
-        cd xvidcore/build/generic && \
-        ./configure --prefix="${SRC}" --bindir="${SRC}/bin" --datadir="${DIR}" && \
-        make && \
-        make install && \
-        rm -rf ${DIR} && \
-        DIR=$(mktemp -d) && cd ${DIR} && \
 ## fdk-aac https://github.com/mstorsjo/fdk-aac
         curl -sL https://github.com/mstorsjo/fdk-aac/archive/v${FDKAAC_VERSION}.tar.gz | \
         tar -zx --strip-components=1 && \
@@ -113,8 +118,11 @@
         rm -rf ${DIR} && \
         DIR=$(mktemp -d) && cd ${DIR} && \
 ## ffmpeg https://ffmpeg.org/
-        curl -sL http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz | \
-        tar -zx --strip-components=1 && \
+        gpg --keyserver ha.pool.sks-keyservers.net --recv-keys ${FFMPEG_KEY} && \
+        curl -sLO http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz && \
+        curl -sLO http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz.asc && \
+        gpg --batch  --verify ffmpeg-${FFMPEG_VERSION}.tar.gz.asc ffmpeg-${FFMPEG_VERSION}.tar.gz && \
+        tar -zx --strip-components=1 -f ffmpeg-${FFMPEG_VERSION}.tar.gz && \
         ./configure --prefix="${SRC}" \
         --extra-cflags="-I${SRC}/include" \
         --extra-ldflags="-L${SRC}/lib" \
