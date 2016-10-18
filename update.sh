@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-cd $(cd ${0%/*} && pwd -P);
+#cd $(cd ${0%/*} && pwd -P);
 
 
 majors=( "$@" )
@@ -16,6 +16,7 @@ travisEnv=''
 
 #
 for major in "${majors[@]}"; do
+  echo ${major}
   minor=$(curl -sSL --compressed http://ffmpeg.org/releases/ | grep '<a href="ffmpeg-'"${major}." | sed -E 's!.*<a href="ffmpeg-([^"/]+)/?".*!\1!' | cut -f 3 -d . | sort -n | tail -1)
   version=${major}.${minor}
   ENV="$(sed s*%%FFMPEG_VERSION%%*${version}*g Dockerfile-env)"
@@ -29,11 +30,11 @@ for major in "${majors[@]}"; do
       TRAVIS_VARIANT="VARIANT=${variant}"
     fi
 
-    sed -e "s*%%ENV%%*${ENV}*g" ${variant}-dockerfile.template  \
-		    -e '/%%RUN%%/{
-    s/%%RUN%%//g
-    r Dockerfile-run
-	}' > ${DOCKERFILE}
+    sed -e "s*%%ENV%%*${ENV}*g" ${variant}-dockerfile.template  > tmp
+	# 	cat tmp |    -e '/%%RUN%%/{
+  #   s/%%RUN%%//g
+  #   r Dockerfile-run
+	# }' > ${DOCKERFILE}
     travisEnv+="\n - major=${major} ${TRAVIS_VARIANT}"
   done
 done
